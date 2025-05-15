@@ -1,0 +1,2 @@
+C:/Users/lalsl/AndroidStudioProjects/finallab_santosla/android/app/.cxx/Debug/589566z1/armeabi-v7a/CMakeFiles/edit_cache.dir
+C:/Users/lalsl/AndroidStudioProjects/finallab_santosla/android/app/.cxx/Debug/589566z1/armeabi-v7a/CMakeFiles/rebuild_cache.dir

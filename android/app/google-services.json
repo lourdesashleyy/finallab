@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1084681208580",
+    "project_id": "finallabproj",
+    "storage_bucket": "finallabproj.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1084681208580:android:c3ab2427b098b6a8528651",
+        "android_client_info": {
+          "package_name": "com.example.finallab_santosla"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC3b_OOBzfDLFA78ZNnC8R6kKMNBZZILI4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
