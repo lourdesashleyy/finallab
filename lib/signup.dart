@@ -108,6 +108,8 @@ class _RegisterFormState extends State<RegisterForm> {
                                     'securityQuestion': selectedSecurityQuestion,
                                     'securityAnswer': securityAnswerController.text,
                                     'profilePicture': null,
+                                    'followers': [],
+                                    'following': ["Hoops ng Bayan Official"],
                                   });
 
                                   Fluttertoast.showToast(

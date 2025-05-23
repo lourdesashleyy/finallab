@@ -71,10 +71,15 @@ class HomePage extends StatelessWidget {
         backgroundColor: const Color(0xFF0D1B63),
         actions: [
           IconButton(
-            onPressed: () {
+            onPressed: () async {
+              final doc = await FirebaseFirestore.instance.collection('tbl_Users').doc(currentUserId).get();
+              final username = doc.data()?['username'] ?? 'Unknown User';
+
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
+                MaterialPageRoute(
+                  builder: (context) => ProfilePage(username: username),
+                ),
               );
             },
             icon: const CircleAvatar(

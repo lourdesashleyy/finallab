@@ -30,7 +30,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
 
   Future<void> createPost() async {
     final newPostId = const Uuid().v4();
-    final userId = FirebaseAuth.instance.currentUser!.uid;
+    final userId = widget.userId;
     String imageUrl = '';
 
     if (_imageFile != null) {
