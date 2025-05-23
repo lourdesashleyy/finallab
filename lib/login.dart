@@ -25,7 +25,6 @@ class _LoginPageState extends State<LoginPage> {
     String password = passwordController.text.trim();
 
     try {
-      // Query Firestore for matching username and password
       QuerySnapshot query = await FirebaseFirestore.instance
           .collection("tbl_Users")
           .where('username', isEqualTo: username)
@@ -33,13 +32,22 @@ class _LoginPageState extends State<LoginPage> {
           .get();
 
       if (query.docs.isNotEmpty) {
-        // Login successful
+        final userDoc = query.docs.first;
+        final userId = userDoc.id; // this is the document ID
+
+        // Optional: Verify user_id field consistency
+        await FirebaseFirestore.instance.collection("tbl_Users").doc(userId).update({
+          'user_id': userId,
+        });
+
+        // Pass the document ID to HomePage
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(
+            builder: (context) => HomePage(userId: userId),
+          ),
         );
       } else {
-        // Invalid credentials
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Invalid username or password")),
         );
@@ -52,6 +60,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => isLoading = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
