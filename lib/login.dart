@@ -32,10 +32,19 @@ class _LoginPageState extends State<LoginPage> {
           .get();
 
       if (query.docs.isNotEmpty) {
+        final userDoc = query.docs.first;
+        final userId = userDoc.id; // this is the document ID
+
+        // Optional: Verify user_id field consistency
+        await FirebaseFirestore.instance.collection("tbl_Users").doc(userId).update({
+          'user_id': userId,
+        });
+
+        // Pass the document ID to HomePage
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
-            builder: (context) => HomePage(username: username),
+            builder: (context) => HomePage(userId: userId),
           ),
         );
       } else {
@@ -51,6 +60,7 @@ class _LoginPageState extends State<LoginPage> {
       setState(() => isLoading = false);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
