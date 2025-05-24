@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../profile.dart';
 
@@ -42,12 +43,15 @@ class PostCard extends StatefulWidget {
 class _PostCardState extends State<PostCard> {
   late bool liked;
   late int likeCount;
+  String? profilePictureUrl;
+  bool isLoading = true;
 
   @override
   void initState() {
     super.initState();
     liked = widget.isLiked;
     likeCount = widget.likes;
+    fetchProfilePicture();
   }
 
   void toggleLike() {
@@ -56,6 +60,31 @@ class _PostCardState extends State<PostCard> {
       liked = !liked;
       likeCount += liked ? 1 : -1;
     });
+  }
+
+  Future<void> fetchProfilePicture() async {
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('tbl_Users')
+          .doc(widget.userId)
+          .get();
+
+      if (userDoc.exists) {
+        final data = userDoc.data();
+        setState(() {
+          profilePictureUrl = data?['profilePicture'];
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    } catch (_) {
+      setState(() {
+        isLoading = false;
+      });
+    }
   }
 
   @override
@@ -84,7 +113,13 @@ class _PostCardState extends State<PostCard> {
                   },
                   child: Row(
                     children: [
-                      const CircleAvatar(child: Icon(Icons.group)),
+                      isLoading
+                          ? const CircleAvatar(child: Icon(Icons.group))
+                          : (profilePictureUrl != null && profilePictureUrl!.isNotEmpty)
+                          ? CircleAvatar(
+                        backgroundImage: NetworkImage(profilePictureUrl!),
+                      )
+                          : const CircleAvatar(child: Icon(Icons.group)),
                       const SizedBox(width: 10),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -124,7 +159,6 @@ class _PostCardState extends State<PostCard> {
             // Post content
             Text(widget.content),
 
-            // Image (if available)
             if (widget.imageUrl.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
@@ -145,7 +179,6 @@ class _PostCardState extends State<PostCard> {
 
             const SizedBox(height: 12),
 
-            // Action buttons
             Row(
               children: [
                 GestureDetector(
