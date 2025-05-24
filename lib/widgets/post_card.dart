@@ -48,7 +48,7 @@ class _PostCardState extends State<PostCard> {
   }
 
   void toggleLike() {
-    widget.onLike(); // Handles Firestore logic outside the widget
+    widget.onLike();
     setState(() {
       liked = !liked;
       likeCount += liked ? 1 : -1;
@@ -99,14 +99,8 @@ class _PostCardState extends State<PostCard> {
                       if (value == 'delete') widget.onDelete();
                     },
                     itemBuilder: (context) => [
-                      const PopupMenuItem(
-                        value: 'edit',
-                        child: Text('Edit'),
-                      ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('Delete'),
-                      ),
+                      const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                      const PopupMenuItem(value: 'delete', child: Text('Delete')),
                     ],
                   ),
               ],
@@ -117,12 +111,22 @@ class _PostCardState extends State<PostCard> {
             // Post content
             Text(widget.content),
 
+            // Image display if imageUrl is present
             if (widget.imageUrl.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(widget.imageUrl, fit: BoxFit.cover),
+                  child: Image.network(
+                    widget.imageUrl,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return const Text(
+                        '⚠️ Failed to load image',
+                        style: TextStyle(color: Colors.red, fontStyle: FontStyle.italic),
+                      );
+                    },
+                  ),
                 ),
               ),
 

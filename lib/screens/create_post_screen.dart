@@ -1,9 +1,5 @@
-import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:uuid/uuid.dart';
 
 class CreatePostScreen extends StatefulWidget {
@@ -17,42 +13,24 @@ class CreatePostScreen extends StatefulWidget {
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
   final TextEditingController _contentController = TextEditingController();
-  File? _imageFile;
-
-  Future<void> pickImage() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-    if (picked != null) {
-      setState(() {
-        _imageFile = File(picked.path);
-      });
-    }
-  }
+  final TextEditingController _imageUrlController = TextEditingController();
 
   Future<void> createPost() async {
     final newPostId = const Uuid().v4();
-    final userId = widget.userId;
-    String imageUrl = '';
-
-    if (_imageFile != null) {
-      final ref = FirebaseStorage.instance.ref().child('post_images/$newPostId.jpg');
-      await ref.putFile(_imageFile!);
-      imageUrl = await ref.getDownloadURL();
-    }
 
     await FirebaseFirestore.instance.collection('tbl_posts').doc(newPostId).set({
       'post_id': newPostId,
       'content': _contentController.text.trim(),
-      'image_url': imageUrl,
+      'image_url': _imageUrlController.text.trim(),
       'likes_count': 0,
-      'likedUserIds': [], // ✅ Initialize as empty list
+      'likedUserIds': [],
       'comments_count': 0,
       'timestamp': Timestamp.now(),
-      'user_id': userId,
+      'user_id': widget.userId,
     });
 
     Navigator.pop(context);
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -71,11 +49,12 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            if (_imageFile != null)
-              Image.file(_imageFile!, height: 200),
-            ElevatedButton(
-              onPressed: pickImage,
-              child: const Text("Pick Image"),
+            TextField(
+              controller: _imageUrlController,
+              decoration: const InputDecoration(
+                labelText: "Image URL (optional)",
+                border: OutlineInputBorder(),
+              ),
             ),
             const SizedBox(height: 12),
             ElevatedButton(
