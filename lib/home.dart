@@ -78,7 +78,7 @@ class HomePage extends StatelessWidget {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => ProfilePage(username: username),
+                  builder: (context) => ProfilePage(userId: userId),
                 ),
               );
             },
@@ -124,6 +124,7 @@ class HomePage extends StatelessWidget {
                   if (!userSnap.hasData) return const SizedBox();
                   return PostCard(
                     postId: doc.id,
+                    userId: data['user_id'], // ✅ Add this line
                     teamName: userSnap.data!,
                     timeAgo: formattedDate,
                     content: data['content'],
