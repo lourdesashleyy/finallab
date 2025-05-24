@@ -34,6 +34,57 @@ class _CommentScreenState extends State<CommentScreen> {
     await postRef.update({'comments_count': current + 1});
   }
 
+  Future<void> deleteComment(String commentId) async {
+    await FirebaseFirestore.instance
+        .collection('tbl_posts')
+        .doc(widget.postId)
+        .collection('tbl_comments')
+        .doc(commentId)
+        .delete();
+
+    final postRef = FirebaseFirestore.instance.collection('tbl_posts').doc(widget.postId);
+    final postDoc = await postRef.get();
+    final current = postDoc['comments_count'] ?? 1;
+    await postRef.update({'comments_count': current - 1});
+  }
+
+  Future<void> editComment(String commentId, String oldContent) async {
+    final controller = TextEditingController(text: oldContent);
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Edit Comment"),
+          content: TextField(
+            controller: controller,
+            maxLines: 3,
+            decoration: const InputDecoration(hintText: "Update your comment"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await FirebaseFirestore.instance
+                    .collection('tbl_posts')
+                    .doc(widget.postId)
+                    .collection('tbl_comments')
+                    .doc(commentId)
+                    .update({
+                  'comment': controller.text.trim(),
+                });
+                Navigator.pop(context);
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,6 +114,7 @@ class _CommentScreenState extends State<CommentScreen> {
                     final comment = data['comment'] ?? '';
                     final timestamp = (data['timestamp'] as Timestamp).toDate();
                     final commentUserId = data['user_id'] ?? '';
+                    final commentId = doc.id;
 
                     return FutureBuilder<DocumentSnapshot>(
                       future: FirebaseFirestore.instance
@@ -95,6 +147,21 @@ class _CommentScreenState extends State<CommentScreen> {
                               ),
                             ],
                           ),
+                          trailing: widget.userId == commentUserId
+                              ? PopupMenuButton<String>(
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                editComment(commentId, comment);
+                              } else if (value == 'delete') {
+                                deleteComment(commentId);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                              const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                            ],
+                          )
+                              : null,
                         );
                       },
                     );
