@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import '../profile.dart';
 
 class PostCard extends StatefulWidget {
   final String postId;
+  final String userId;
   final String teamName;
   final String timeAgo;
   final String content;
@@ -18,6 +20,7 @@ class PostCard extends StatefulWidget {
   const PostCard({
     super.key,
     required this.postId,
+    required this.userId,
     required this.teamName,
     required this.timeAgo,
     required this.content,
@@ -66,31 +69,41 @@ class _PostCardState extends State<PostCard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            // Header with profile tap
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    const CircleAvatar(child: Icon(Icons.group)),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.teamName,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          widget.timeAgo,
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfilePage(userId: widget.userId),
+                      ),
+                    );
+                  },
+                  child: Row(
+                    children: [
+                      const CircleAvatar(child: Icon(Icons.group)),
+                      const SizedBox(width: 10),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.teamName,
+                            style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
+                          Text(
+                            widget.timeAgo,
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
                 if (widget.isOwner)
                   PopupMenuButton<String>(
@@ -111,7 +124,7 @@ class _PostCardState extends State<PostCard> {
             // Post content
             Text(widget.content),
 
-            // Image display if imageUrl is present
+            // Image (if available)
             if (widget.imageUrl.isNotEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
