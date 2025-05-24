@@ -66,7 +66,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isTeamAccount = teamUsernames.contains(widget.username);
+    final isTeamAccount = username != null && teamUsernames.contains(username);
+
 
     return DefaultTabController(
       length: isTeamAccount ? 2 : 1,
