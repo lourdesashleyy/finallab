@@ -17,6 +17,21 @@ class _ProfilePageState extends State<ProfilePage> {
   String? profilePictureUrl;
   String? userId;
 
+  final List<String> teamUsernames = [
+    "ginebra_sanmiguel",
+    "sanmiguel_beermen",
+    "tnt_giga",
+    "meralco_bolts",
+    "magnolia_hotshots",
+    "rainorshine_painters",
+    "phoenix_fuelmasters",
+    "nlex_warriors",
+    "northport_pier",
+    "terrafirma_dyip",
+    "blackwater_bossing",
+    "converge_fiberxers",
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -52,14 +67,17 @@ class _ProfilePageState extends State<ProfilePage> {
     }
     return FirebaseFirestore.instance
         .collection("tbl_posts")
-        .where("userId", isEqualTo: userId)
+        .where("user_id", isEqualTo: userId)
+        .orderBy("timestamp", descending: true)
         .snapshots();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isTeamAccount = teamUsernames.contains(widget.username);
+
     return DefaultTabController(
-      length: 2,
+      length: isTeamAccount ? 2 : 1,
       child: Scaffold(
         appBar: AppBar(
           title: const Text("Profile"),
@@ -77,23 +95,22 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
-
             Column(
               children: [
                 const SizedBox(height: 180),
-                const TabBar(
-                  indicatorColor: Color(0xFF0D1B63),
+                TabBar(
+                  indicatorColor: const Color(0xFF0D1B63),
                   labelColor: Colors.black,
                   unselectedLabelColor: Colors.black54,
                   tabs: [
-                    Tab(text: "POSTS"),
-                    Tab(text: "ROSTER"),
+                    const Tab(text: "POSTS"),
+                    if (isTeamAccount) const Tab(text: "ROSTER"),
                   ],
                 ),
-
                 Expanded(
                   child: TabBarView(
                     children: [
+                      // POSTS tab
                       StreamBuilder<QuerySnapshot>(
                         stream: getUserPosts(),
                         builder: (context, snapshot) {
@@ -120,25 +137,29 @@ class _ProfilePageState extends State<ProfilePage> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
-                                        post["team"] ?? "Team Name",
-                                        style: const TextStyle(fontWeight: FontWeight.bold),
-                                      ),
+                                      if (post["team"] != null)
+                                        Text(
+                                          post["team"],
+                                          style: const TextStyle(fontWeight: FontWeight.bold),
+                                        ),
                                       const SizedBox(height: 4),
                                       Text(
                                         post["content"] ?? "",
                                         style: const TextStyle(fontSize: 14),
                                       ),
                                       const SizedBox(height: 8),
+                                      if (post["image_url"] != null && post["image_url"].toString().isNotEmpty)
+                                        Image.network(post["image_url"], fit: BoxFit.cover),
+                                      const SizedBox(height: 8),
                                       Row(
                                         children: [
                                           const Icon(Icons.favorite_border, size: 16),
                                           const SizedBox(width: 4),
-                                          Text("${post["likes"] ?? 0}"),
+                                          Text("${post["likes_count"] ?? 0}"),
                                           const SizedBox(width: 12),
                                           const Icon(Icons.chat_bubble_outline, size: 16),
                                           const SizedBox(width: 4),
-                                          Text("${post["comments"] ?? 0}"),
+                                          Text("${post["comments_count"] ?? 0}"),
                                         ],
                                       ),
                                     ],
@@ -150,28 +171,30 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                       ),
 
-                      Container(
-                        color: Colors.transparent,
-                        alignment: Alignment.topCenter,
-                        padding: const EdgeInsets.all(16),
-                        child: Container(
+                      // ROSTER tab
+                      if (isTeamAccount)
+                        Container(
+                          color: Colors.transparent,
+                          alignment: Alignment.topCenter,
                           padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: const Text(
-                            "Roster content here",
-                            style: TextStyle(fontSize: 16),
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              "Roster content here",
+                              style: TextStyle(fontSize: 16),
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
               ],
             ),
-
+            // Profile Header
             Positioned(
               top: 0,
               left: 0,
