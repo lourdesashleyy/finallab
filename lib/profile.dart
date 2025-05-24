@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'editprofile.dart';
 
 class ProfilePage extends StatefulWidget {
-  final String username;
+  final String userId;
 
-  const ProfilePage({super.key, required this.username});
+  const ProfilePage({super.key, required this.userId});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -15,7 +15,7 @@ class _ProfilePageState extends State<ProfilePage> {
   int followerCount = 0;
   int followingCount = 0;
   String? profilePictureUrl;
-  String? userId;
+  String? username;
 
   final List<String> teamUsernames = [
     "ginebra_sanmiguel",
@@ -40,17 +40,12 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> fetchUserStats() async {
     try {
-      final query = await FirebaseFirestore.instance
-          .collection("tbl_Users")
-          .where("username", isEqualTo: widget.username)
-          .get();
+      final userDoc = await FirebaseFirestore.instance.collection("tbl_Users").doc(widget.userId).get();
 
-      if (query.docs.isNotEmpty) {
-        final userDoc = query.docs.first;
-        final data = userDoc.data();
-
+      if (userDoc.exists) {
+        final data = userDoc.data()!;
         setState(() {
-          userId = userDoc.id;
+          username = data['username'];
           followerCount = (data['followers'] as List?)?.length ?? 0;
           followingCount = (data['following'] as List?)?.length ?? 0;
           profilePictureUrl = data['profilePicture'] as String?;
@@ -62,12 +57,9 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Stream<QuerySnapshot> getUserPosts() {
-    if (userId == null) {
-      return const Stream.empty();
-    }
     return FirebaseFirestore.instance
         .collection("tbl_posts")
-        .where("user_id", isEqualTo: userId)
+        .where("user_id", isEqualTo: widget.userId)
         .orderBy("timestamp", descending: true)
         .snapshots();
   }
@@ -171,6 +163,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         },
                       ),
 
+
                       // ROSTER tab
                       if (isTeamAccount)
                         Container(
@@ -194,7 +187,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ],
             ),
-            // Profile Header
             Positioned(
               top: 0,
               left: 0,
@@ -209,17 +201,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 child: Padding(
                   padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
-                  child: userId != null
-                      ? StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('tbl_Users')
-                        .doc(userId)
-                        .snapshots(),
+                  child: StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).snapshots(),
                     builder: (context, snapshot) {
-                      if (!snapshot.hasData) {
-                        return const CircularProgressIndicator();
-                      }
-
+                      if (!snapshot.hasData) return const CircularProgressIndicator();
                       final data = snapshot.data!.data() as Map<String, dynamic>;
                       final liveUsername = data['username'] ?? '';
                       final liveProfilePictureUrl = data['profilePicture'];
@@ -297,12 +282,11 @@ class _ProfilePageState extends State<ProfilePage> {
                                         final updated = await Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) =>
-                                                EditProfilePage(username: widget.username),
+                                            builder: (context) => EditProfilePage(username: liveUsername),
                                           ),
                                         );
                                         if (updated == true) {
-                                          fetchUserStats(); // refresh
+                                          fetchUserStats();
                                         }
                                       },
                                       icon: const Icon(Icons.edit, size: 16),
@@ -316,8 +300,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         ],
                       );
                     },
-                  )
-                      : const SizedBox.shrink(),
+                  ),
                 ),
               ),
             ),

@@ -71,10 +71,15 @@ class HomePage extends StatelessWidget {
         backgroundColor: const Color(0xFF0D1B63),
         actions: [
           IconButton(
-            onPressed: () {
+            onPressed: () async {
+              final doc = await FirebaseFirestore.instance.collection('tbl_Users').doc(currentUserId).get();
+              final username = doc.data()?['username'] ?? 'Unknown User';
+
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ProfilePage()),
+                MaterialPageRoute(
+                  builder: (context) => ProfilePage(userId: userId),
+                ),
               );
             },
             icon: const CircleAvatar(
@@ -119,6 +124,7 @@ class HomePage extends StatelessWidget {
                   if (!userSnap.hasData) return const SizedBox();
                   return PostCard(
                     postId: doc.id,
+                    userId: data['user_id'], // ✅ Add this line
                     teamName: userSnap.data!,
                     timeAgo: formattedDate,
                     content: data['content'],
