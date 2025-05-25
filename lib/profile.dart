@@ -1,215 +1,167 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'editprofile.dart';
+import 'posts_tab.dart';
+import 'roster_tab.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userId;
+  final String currentUsername;
 
-  const ProfilePage({super.key, required this.userId});
+  const ProfilePage({Key? key, required this.userId, required this.currentUsername}) : super(key: key);
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  int followerCount = 0;
-  int followingCount = 0;
-  String? profilePictureUrl;
-  String? username;
-
   final List<String> teamUsernames = [
-    "ginebra_sanmiguel",
-    "sanmiguel_beermen",
-    "tnt_giga",
-    "meralco_bolts",
-    "magnolia_hotshots",
-    "rainorshine_painters",
-    "phoenix_fuelmasters",
-    "nlex_warriors",
-    "northport_pier",
-    "terrafirma_dyip",
-    "blackwater_bossing",
-    "converge_fiberxers",
+    "ginebra_kings",
+    "smb_beermen",
+    "tnt_tropang",
+    "meralco_energy",
+    "magnolia_pambansang",
+    "rainshine_elasto",
+    "phoenix_lpg_masters",
+    "nlex_roadmen",
+    "northport_batang",
+    "dyip_terrafirma",
+    "bossing_blackwater",
+    "fiberx_converge",
   ];
 
-  @override
-  void initState() {
-    super.initState();
-    fetchUserStats();
-  }
-
-  Future<void> fetchUserStats() async {
+  Future<String> getUsername(String userId) async {
     try {
-      final userDoc = await FirebaseFirestore.instance.collection("tbl_Users").doc(widget.userId).get();
-
-      if (userDoc.exists) {
-        final data = userDoc.data()!;
-        setState(() {
-          username = data['username'];
-          followerCount = (data['followers'] as List?)?.length ?? 0;
-          followingCount = (data['following'] as List?)?.length ?? 0;
-          profilePictureUrl = data['profilePicture'] as String?;
-        });
-      }
-    } catch (e) {
-      print("Error fetching user stats: $e");
+      final doc = await FirebaseFirestore.instance.collection('tbl_Users').doc(userId).get();
+      return doc.exists ? (doc.data()?['username'] ?? 'Unknown User') : 'Unknown User';
+    } catch (_) {
+      return 'Unknown User';
     }
   }
 
-  Stream<QuerySnapshot> getUserPosts() {
-    return FirebaseFirestore.instance
-        .collection("tbl_posts")
-        .where("user_id", isEqualTo: widget.userId)
-        .orderBy("timestamp", descending: true)
-        .snapshots();
+  Future<void> toggleLike(String postId, String currentUserId) async {
+    final postRef = FirebaseFirestore.instance.collection('tbl_posts').doc(postId);
+
+    await FirebaseFirestore.instance.runTransaction((transaction) async {
+      final snapshot = await transaction.get(postRef);
+
+      if (!snapshot.exists) return;
+
+      final data = snapshot.data()!;
+      final currentLikes = data['likes_count'] ?? 0;
+      final List<dynamic> likedUserIds = data['likedUserIds'] ?? [];
+
+      if (likedUserIds.contains(currentUserId)) {
+        transaction.update(postRef, {
+          'likes_count': currentLikes > 0 ? currentLikes - 1 : 0,
+          'likedUserIds': FieldValue.arrayRemove([currentUserId]),
+        });
+      } else {
+        transaction.update(postRef, {
+          'likes_count': currentLikes + 1,
+          'likedUserIds': FieldValue.arrayUnion([currentUserId]),
+        });
+      }
+    });
+  }
+
+  Future<void> deletePost(String postId) async {
+    await FirebaseFirestore.instance.collection('tbl_posts').doc(postId).delete();
   }
 
   @override
   Widget build(BuildContext context) {
+<<<<<<< Updated upstream
     final isTeamAccount = teamUsernames.contains(widget.username);
+=======
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('tbl_Users')
+          .doc(widget.userId)
+          .snapshots(),
+      builder: (context, userSnapshot) {
+        if (userSnapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
 
-    return DefaultTabController(
-      length: isTeamAccount ? 2 : 1,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text("Profile"),
-          backgroundColor: const Color(0xFF0D1B63),
-        ),
-        body: Stack(
-          children: [
-            Container(
-              width: double.infinity,
-              height: double.infinity,
-              decoration: const BoxDecoration(
-                image: DecorationImage(
-                  image: AssetImage("assets/profile_banner.png"),
-                  fit: BoxFit.cover,
-                ),
-              ),
+        if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+          return const Scaffold(
+            body: Center(child: Text("User not found.")),
+          );
+        }
+>>>>>>> Stashed changes
+
+        final userData = userSnapshot.data!.data()! as Map<String, dynamic>;
+        final username = userData['username'] ?? "";
+        final followers = (userData['followers'] as List<dynamic>?) ?? [];
+        final following = (userData['following'] as List<dynamic>?) ?? [];
+        final profilePictureUrl = userData['profilePicture'] as String?;
+        final isTeamAccount = teamUsernames.contains(username);
+
+        return DefaultTabController(
+          length: isTeamAccount ? 2 : 1,
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text("Profile"),
+              backgroundColor: const Color(0xFF0D1B63),
             ),
-            Column(
+            body: Stack(
               children: [
-                const SizedBox(height: 180),
-                TabBar(
-                  indicatorColor: const Color(0xFF0D1B63),
-                  labelColor: Colors.black,
-                  unselectedLabelColor: Colors.black54,
-                  tabs: [
-                    const Tab(text: "POSTS"),
-                    if (isTeamAccount) const Tab(text: "ROSTER"),
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  decoration: const BoxDecoration(
+                    image: DecorationImage(
+                      image: AssetImage("assets/profile_banner.png"),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                Column(
+                  children: [
+                    const SizedBox(height: 180),
+                    TabBar(
+                      indicatorColor: const Color(0xFF0D1B63),
+                      labelColor: Colors.black,
+                      unselectedLabelColor: Colors.black54,
+                      tabs: [
+                        const Tab(text: "POSTS"),
+                        if (isTeamAccount) const Tab(text: "ROSTER"),
+                      ],
+                    ),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          PostsTab(
+                            userId: widget.userId,
+                            currentUsername: widget.currentUsername,
+                            getUsername: getUsername,
+                            toggleLike: toggleLike,
+                            deletePost: deletePost,
+                          ),
+                          if (isTeamAccount) RosterTab(username: username),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
-                Expanded(
-                  child: TabBarView(
-                    children: [
-                      // POSTS tab
-                      StreamBuilder<QuerySnapshot>(
-                        stream: getUserPosts(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return const Center(child: CircularProgressIndicator());
-                          }
-
-                          final posts = snapshot.data!.docs;
-
-                          if (posts.isEmpty) {
-                            return const Center(child: Text("No posts yet."));
-                          }
-
-                          return ListView.builder(
-                            padding: const EdgeInsets.all(16),
-                            itemCount: posts.length,
-                            itemBuilder: (context, index) {
-                              final post = posts[index].data() as Map<String, dynamic>;
-                              return Card(
-                                color: Colors.white.withOpacity(0.9),
-                                margin: const EdgeInsets.only(bottom: 16),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(12.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      if (post["team"] != null)
-                                        Text(
-                                          post["team"],
-                                          style: const TextStyle(fontWeight: FontWeight.bold),
-                                        ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        post["content"] ?? "",
-                                        style: const TextStyle(fontSize: 14),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      if (post["image_url"] != null && post["image_url"].toString().isNotEmpty)
-                                        Image.network(post["image_url"], fit: BoxFit.cover),
-                                      const SizedBox(height: 8),
-                                      Row(
-                                        children: [
-                                          const Icon(Icons.favorite_border, size: 16),
-                                          const SizedBox(width: 4),
-                                          Text("${post["likes_count"] ?? 0}"),
-                                          const SizedBox(width: 12),
-                                          const Icon(Icons.chat_bubble_outline, size: 16),
-                                          const SizedBox(width: 4),
-                                          Text("${post["comments_count"] ?? 0}"),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
-                        },
+                // Top profile info
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: Container(
+                    height: 180,
+                    decoration: const BoxDecoration(
+                      image: DecorationImage(
+                        image: AssetImage("assets/profile_banner.png"),
+                        fit: BoxFit.cover,
                       ),
-
-
-                      // ROSTER tab
-                      if (isTeamAccount)
-                        Container(
-                          color: Colors.transparent,
-                          alignment: Alignment.topCenter,
-                          padding: const EdgeInsets.all(16),
-                          child: Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Text(
-                              "Roster content here",
-                              style: TextStyle(fontSize: 16),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                height: 180,
-                decoration: const BoxDecoration(
-                  image: DecorationImage(
-                    image: AssetImage("assets/profile_banner.png"),
-                    fit: BoxFit.cover,
-                  ),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
-                  child: StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).snapshots(),
-                    builder: (context, snapshot) {
-                      if (!snapshot.hasData) return const CircularProgressIndicator();
-                      final data = snapshot.data!.data() as Map<String, dynamic>;
-                      final liveUsername = data['username'] ?? '';
-                      final liveProfilePictureUrl = data['profilePicture'];
-
-                      return Stack(
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 20, left: 16, right: 16),
+                      child: Stack(
                         children: [
                           Positioned(
                             top: 20,
@@ -218,13 +170,14 @@ class _ProfilePageState extends State<ProfilePage> {
                               padding: const EdgeInsets.all(3),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Color(0xFF0D1B63), width: 3),
+                                border: Border.all(color: const Color(0xFF0D1B63), width: 3),
                               ),
                               child: CircleAvatar(
                                 radius: 40,
-                                backgroundImage: liveProfilePictureUrl != null
-                                    ? NetworkImage(liveProfilePictureUrl)
-                                    : const AssetImage("assets/profile_icon.jpg") as ImageProvider,
+                                backgroundImage: profilePictureUrl != null
+                                    ? NetworkImage(profilePictureUrl)
+                                    : const AssetImage("assets/profile_icon.jpg")
+                                as ImageProvider,
                                 backgroundColor: Colors.white,
                               ),
                             ),
@@ -236,7 +189,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  liveUsername,
+                                  username,
                                   style: const TextStyle(
                                     fontSize: 22,
                                     fontWeight: FontWeight.bold,
@@ -249,7 +202,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     Column(
                                       children: [
                                         Text(
-                                          "$followerCount",
+                                          "${followers.length}",
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: Color(0xFF0D1B63)),
@@ -261,7 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                     Column(
                                       children: [
                                         Text(
-                                          "$followingCount",
+                                          "${following.length}",
                                           style: const TextStyle(
                                               fontWeight: FontWeight.bold,
                                               color: Color(0xFF0D1B63)),
@@ -270,43 +223,86 @@ class _ProfilePageState extends State<ProfilePage> {
                                       ],
                                     ),
                                     const SizedBox(width: 16),
-                                    OutlinedButton.icon(
-                                      style: OutlinedButton.styleFrom(
-                                        side: const BorderSide(color: Color(0xFF0D1B63)),
-                                        shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(30)),
-                                        foregroundColor: const Color(0xFF0D1B63),
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                      ),
-                                      onPressed: () async {
-                                        final updated = await Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => EditProfilePage(username: liveUsername),
-                                          ),
-                                        );
-                                        if (updated == true) {
-                                          fetchUserStats();
-                                        }
-                                      },
-                                      icon: const Icon(Icons.edit, size: 16),
-                                      label: const Text("EDIT", style: TextStyle(fontSize: 14)),
-                                    ),
+
+                                    // Follow/Unfollow Button
+                                    // ONLY show button if NOT viewing own profile (compare usernames)
+                                    if (username != widget.currentUsername)
+                                      FutureBuilder<QuerySnapshot>(
+                                        future: FirebaseFirestore.instance
+                                            .collection('tbl_Users')
+                                            .where('username', isEqualTo: widget.currentUsername)
+                                            .limit(1)
+                                            .get(),
+                                        builder: (context, snapshot) {
+                                          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                                            return const SizedBox();
+                                          }
+
+                                          final currentUserDoc = snapshot.data!.docs.first;
+                                          final currentUserFollowing = (currentUserDoc['following'] as List<dynamic>?) ?? [];
+
+                                          // Check if current user follows the profile user by username
+                                          final isFollowing = currentUserFollowing.contains(username);
+
+                                          return OutlinedButton(
+                                            style: OutlinedButton.styleFrom(
+                                              side: const BorderSide(color: Color(0xFF0D1B63)),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(30),
+                                              ),
+                                              foregroundColor: const Color(0xFF0D1B63),
+                                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                            ),
+                                            onPressed: () async {
+                                              final currentUserRef = currentUserDoc.reference;
+                                              final viewedUserRef = FirebaseFirestore.instance
+                                                  .collection('tbl_Users')
+                                                  .doc(widget.userId);
+
+                                              await FirebaseFirestore.instance.runTransaction((transaction) async {
+                                                final currentUserSnap = await transaction.get(currentUserRef);
+                                                final viewedUserSnap = await transaction.get(viewedUserRef);
+
+                                                if (!currentUserSnap.exists || !viewedUserSnap.exists) return;
+
+                                                final currentFollowing = List<String>.from(currentUserSnap['following'] ?? []);
+                                                final viewedFollowers = List<String>.from(viewedUserSnap['followers'] ?? []);
+
+                                                if (isFollowing) {
+                                                  currentFollowing.remove(username);
+                                                  viewedFollowers.remove(widget.currentUsername);
+                                                } else {
+                                                  currentFollowing.add(username);
+                                                  viewedFollowers.add(widget.currentUsername);
+                                                }
+
+                                                transaction.update(currentUserRef, {'following': currentFollowing});
+                                                transaction.update(viewedUserRef, {'followers': viewedFollowers});
+                                              });
+
+                                              setState(() {}); // Refresh UI
+                                            },
+                                            child: Text(isFollowing ? "UNFOLLOW" : "FOLLOW", style: const TextStyle(fontSize: 14)),
+                                          );
+                                        },
+                                      )
+                                    else
+                                      const SizedBox(), // No button if self profile
                                   ],
                                 ),
                               ],
                             ),
                           ),
                         ],
-                      );
-                    },
+                      ),
+                    ),
                   ),
                 ),
-              ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 }
