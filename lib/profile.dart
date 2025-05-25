@@ -70,9 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-<<<<<<< Updated upstream
     final isTeamAccount = teamUsernames.contains(widget.username);
-=======
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('tbl_Users')
@@ -84,13 +82,11 @@ class _ProfilePageState extends State<ProfilePage> {
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
         if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
           return const Scaffold(
             body: Center(child: Text("User not found.")),
           );
         }
->>>>>>> Stashed changes
 
         final userData = userSnapshot.data!.data()! as Map<String, dynamic>;
         final username = userData['username'] ?? "";
