@@ -17,6 +17,7 @@ class PostCard extends StatefulWidget {
   final VoidCallback onDelete;
   final VoidCallback onEdit;
   final bool isLiked;
+  final String currentUsername;
 
   const PostCard({
     super.key,
@@ -34,6 +35,7 @@ class PostCard extends StatefulWidget {
     required this.onDelete,
     required this.onEdit,
     required this.isLiked,
+    required this.currentUsername,
   });
 
   @override
@@ -105,10 +107,13 @@ class _PostCardState extends State<PostCard> {
                 GestureDetector(
                   onTap: () {
                     Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ProfilePage(userId: widget.userId),
-                      ),
+                        context,
+                        MaterialPageRoute(
+                        builder: (_) => ProfilePage(
+                      userId: widget.userId,
+                      currentUsername: widget.currentUsername,
+                        )
+                    ),
                     );
                   },
                   child: Row(
