@@ -70,7 +70,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isTeamAccount = teamUsernames.contains(widget.currentUsername);
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('tbl_Users')
@@ -93,7 +92,7 @@ class _ProfilePageState extends State<ProfilePage> {
         final followers = (userData['followers'] as List<dynamic>?) ?? [];
         final following = (userData['following'] as List<dynamic>?) ?? [];
         final profilePictureUrl = userData['profilePicture'] as String?;
-        final isTeamAccount = teamUsernames.contains(widget.currentUsername);
+        final isTeamAccount = teamUsernames.contains(username); // ✅ Correct check
 
         return DefaultTabController(
           length: isTeamAccount ? 2 : 1,
@@ -220,8 +219,6 @@ class _ProfilePageState extends State<ProfilePage> {
                                     ),
                                     const SizedBox(width: 16),
 
-                                    // Follow/Unfollow Button
-                                    // ONLY show button if NOT viewing own profile (compare usernames)
                                     if (username != widget.currentUsername)
                                       FutureBuilder<QuerySnapshot>(
                                         future: FirebaseFirestore.instance
@@ -236,8 +233,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
                                           final currentUserDoc = snapshot.data!.docs.first;
                                           final currentUserFollowing = (currentUserDoc['following'] as List<dynamic>?) ?? [];
-
-                                          // Check if current user follows the profile user by username
                                           final isFollowing = currentUserFollowing.contains(username);
 
                                           return OutlinedButton(
