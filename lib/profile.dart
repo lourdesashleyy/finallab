@@ -70,7 +70,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   Widget build(BuildContext context) {
-    final isTeamAccount = teamUsernames.contains(widget.username);
+    final isTeamAccount = teamUsernames.contains(widget.currentUsername);
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
           .collection('tbl_Users')
@@ -93,7 +93,7 @@ class _ProfilePageState extends State<ProfilePage> {
         final followers = (userData['followers'] as List<dynamic>?) ?? [];
         final following = (userData['following'] as List<dynamic>?) ?? [];
         final profilePictureUrl = userData['profilePicture'] as String?;
-        final isTeamAccount = teamUsernames.contains(username);
+        final isTeamAccount = teamUsernames.contains(widget.currentUsername);
 
         return DefaultTabController(
           length: isTeamAccount ? 2 : 1,
