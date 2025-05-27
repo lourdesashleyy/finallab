@@ -42,16 +42,12 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Future<void> toggleLike(String postId, String currentUserId) async {
     final postRef = FirebaseFirestore.instance.collection('tbl_posts').doc(postId);
-
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(postRef);
-
       if (!snapshot.exists) throw Exception("Post does not exist");
-
       final data = snapshot.data()!;
       final currentLikes = data['likes_count'] ?? 0;
       final likedUserIds = List<String>.from(data['likedUserIds'] ?? []);
-
       if (likedUserIds.contains(currentUserId)) {
         transaction.update(postRef, {
           'likes_count': currentLikes > 0 ? currentLikes - 1 : 0,
@@ -101,7 +97,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
   Widget buildPostList(QuerySnapshot snapshot) {
     final docs = snapshot.docs;
-
     return ListView.separated(
       itemCount: docs.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -167,9 +162,31 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            const DrawerHeader(
-              decoration: BoxDecoration(color: Color(0xFF0D1B63)),
-              child: Text('Navigation', style: TextStyle(color: Colors.white, fontSize: 24)),
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get(),
+              builder: (context, snapshot) {
+                String profilePicUrl = '';
+                String usernameDisplay = widget.currentUsername;
+                String emailDisplay = '';
+
+                if (snapshot.hasData && snapshot.data!.exists) {
+                  final data = snapshot.data!.data() as Map<String, dynamic>;
+                  profilePicUrl = data['profilePicture'] ?? '';
+                  usernameDisplay = data['username'] ?? widget.currentUsername;
+                  emailDisplay = data['email'] ?? '';
+                }
+
+                return UserAccountsDrawerHeader(
+                  decoration: const BoxDecoration(color: Color(0xFF0D1B63)),
+                  currentAccountPicture: CircleAvatar(
+                    backgroundImage: profilePicUrl.isNotEmpty
+                        ? NetworkImage(profilePicUrl)
+                        : const AssetImage("assets/profile_icon.jpg") as ImageProvider,
+                  ),
+                  accountName: Text(usernameDisplay, style: const TextStyle(fontSize: 18)),
+                  accountEmail: Text(emailDisplay.isNotEmpty ? emailDisplay : "No Email Found", style: const TextStyle(fontSize: 14)),
+                );
+              },
             ),
             ListTile(
               leading: const Icon(Icons.home),
@@ -186,7 +203,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   MaterialPageRoute(
                     builder: (_) => ProfilePage(
                       userId: widget.userId,
-                      currentUsername: widget.currentUsername,  // PASS THIS!
+                      currentUsername: widget.currentUsername,
                     ),
                   ),
                 );
@@ -206,7 +223,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                 );
               },
             ),
-
           ],
         ),
       ),
@@ -250,4 +266,3 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 }
-

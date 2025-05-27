@@ -1,5 +1,8 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class EditProfilePage extends StatefulWidget {
   final String username;
@@ -11,32 +14,19 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
-
-  String? email;
-  String? username;
-  String? favoriteTeam;
-  String? password;
-  String? profilePictureUrl;
-
+  String? email, username, favoriteTeam, password, profilePictureUrl;
   bool isLoading = true;
+  bool _isUpdating = false; // Loading indicator for updating
   late DocumentReference userDocRef;
-
-  final TextEditingController _imageUrlController = TextEditingController();
-
   final List<String> teams = [
-    'Barangay Ginebra San Miguel',
-    'San Miguel Beermen',
-    'TNT Tropang Giga',
-    'Meralco Bolts',
-    'Magnolia Hotshots',
-    'Rain or Shine Elasto Painters',
-    'Phoenix Super LPG Fuel Masters',
-    'NLEX Road Warriors',
-    'NorthPort Batang Pier',
-    'Terrafirma Dyip',
-    'Blackwater Bossing',
-    'Converge FiberXers',
+    'Barangay Ginebra San Miguel', 'San Miguel Beermen', 'TNT Tropang Giga',
+    'Meralco Bolts', 'Magnolia Hotshots', 'Rain or Shine Elasto Painters',
+    'Phoenix Super LPG Fuel Masters', 'NLEX Road Warriors',
+    'NorthPort Batang Pier', 'Terrafirma Dyip', 'Blackwater Bossing',
+    'Converge FiberXers'
   ];
+  final picker = ImagePicker();
+  File? _selectedImage;
 
   @override
   void initState() {
@@ -50,19 +40,16 @@ class _EditProfilePageState extends State<EditProfilePage> {
           .collection("tbl_Users")
           .where("username", isEqualTo: widget.username)
           .get();
-
       if (query.docs.isNotEmpty) {
         final doc = query.docs.first;
         final data = doc.data() as Map<String, dynamic>;
         userDocRef = doc.reference;
-
         setState(() {
           email = data['email'] ?? "";
           username = data['username'] ?? "";
           favoriteTeam = data['favoriteTeam'] ?? "";
           password = data['password'] ?? "";
           profilePictureUrl = data['profilePicture'] ?? "";
-          _imageUrlController.text = profilePictureUrl ?? "";
           isLoading = false;
         });
       } else {
@@ -77,9 +64,34 @@ class _EditProfilePageState extends State<EditProfilePage> {
     }
   }
 
+  Future<void> pickImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() => _selectedImage = File(pickedFile.path));
+    }
+  }
+
   Future<void> updateUserData() async {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
+
+    setState(() => _isUpdating = true); // Show loader
+    String? uploadedUrl = profilePictureUrl;
+    if (_selectedImage != null) {
+      try {
+        final storageRef = FirebaseStorage.instance
+            .ref().child('profile_pictures/${widget.username}.jpg');
+        await storageRef.putFile(_selectedImage!);
+        uploadedUrl = await storageRef.getDownloadURL();
+      } catch (e) {
+        print("Image upload failed: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Image upload failed")),
+        );
+        setState(() => _isUpdating = false); // Hide loader
+        return;
+      }
+    }
 
     try {
       await userDocRef.update({
@@ -87,13 +99,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
         "username": username,
         "favoriteTeam": favoriteTeam,
         "password": password,
-        "profilePicture": profilePictureUrl,
+        "profilePicture": uploadedUrl ?? '',
       });
-
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Profile updated successfully")),
       );
-
       Navigator.pop(context, true);
     } catch (e) {
       print("Error updating profile: $e");
@@ -101,12 +111,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         const SnackBar(content: Text("Failed to update profile")),
       );
     }
-  }
-
-  @override
-  void dispose() {
-    _imageUrlController.dispose();
-    super.dispose();
+    setState(() => _isUpdating = false); // Hide loader
   }
 
   @override
@@ -118,104 +123,95 @@ class _EditProfilePageState extends State<EditProfilePage> {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(title: const Text("Edit Profile")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: ListView(
-            children: [
-              Center(
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundImage: (profilePictureUrl != null &&
-                          profilePictureUrl!.isNotEmpty)
-                          ? NetworkImage(profilePictureUrl!)
-                          : const AssetImage("assets/profile_icon.jpg")
-                      as ImageProvider,
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(title: const Text("Edit Profile")),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                children: [
+                  Center(
+                    child: GestureDetector(
+                      onTap: pickImage,
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundImage: _selectedImage != null
+                            ? FileImage(_selectedImage!)
+                            : (profilePictureUrl != null && profilePictureUrl!.isNotEmpty)
+                            ? NetworkImage(profilePictureUrl!) as ImageProvider
+                            : const AssetImage("assets/profile_icon.jpg"),
+                      ),
                     ),
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _imageUrlController,
-                      decoration:
-                      const InputDecoration(labelText: "Profile Picture URL"),
-                      onChanged: (val) {
-                        setState(() {
-                          profilePictureUrl = val.trim();
-                        });
-                      },
-                      validator: (val) {
-                        if (val == null || val.isEmpty) {
-                          return "Profile picture URL is required";
-                        }
-                        return null;
-                      },
-                      onSaved: (val) => profilePictureUrl = val?.trim(),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text("Tap the picture to change"),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    initialValue: email,
+                    decoration: const InputDecoration(labelText: "Email"),
+                    keyboardType: TextInputType.emailAddress,
+                    onSaved: (val) => email = val?.trim(),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return "Email is required";
+                      if (!val.contains('@')) return "Invalid email";
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    initialValue: username,
+                    decoration: const InputDecoration(labelText: "Username"),
+                    onSaved: (val) => username = val?.trim(),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) return "Username is required";
+                      return null;
+                    },
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: favoriteTeam!.isNotEmpty ? favoriteTeam : null,
+                    decoration: const InputDecoration(labelText: "Favorite Team"),
+                    items: teams
+                        .map((team) => DropdownMenuItem(value: team, child: Text(team)))
+                        .toList(),
+                    onChanged: (val) => setState(() => favoriteTeam = val),
+                    onSaved: (val) => favoriteTeam = val,
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return "Please select a favorite team";
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    initialValue: password,
+                    decoration: const InputDecoration(labelText: "Password"),
+                    obscureText: true,
+                    onSaved: (val) => password = val?.trim(),
+                    validator: (val) {
+                      if (val == null || val.length < 6) {
+                        return "Password must be at least 6 characters";
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: updateUserData,
+                    child: const Text("Save Changes"),
+                  ),
+                ],
               ),
-              const SizedBox(height: 16),
-              TextFormField(
-                initialValue: email,
-                decoration: const InputDecoration(labelText: "Email"),
-                keyboardType: TextInputType.emailAddress,
-                onSaved: (val) => email = val?.trim(),
-                validator: (val) {
-                  if (val == null || val.isEmpty) return "Email is required";
-                  if (!val.contains('@')) return "Invalid email";
-                  return null;
-                },
-              ),
-              TextFormField(
-                initialValue: username,
-                decoration: const InputDecoration(labelText: "Username"),
-                onSaved: (val) => username = val?.trim(),
-                validator: (val) {
-                  if (val == null || val.isEmpty) return "Username is required";
-                  return null;
-                },
-              ),
-              DropdownButtonFormField<String>(
-                value: favoriteTeam!.isNotEmpty ? favoriteTeam : null,
-                decoration: const InputDecoration(labelText: "Favorite Team"),
-                items: teams
-                    .map((team) =>
-                    DropdownMenuItem(value: team, child: Text(team)))
-                    .toList(),
-                onChanged: (val) => setState(() => favoriteTeam = val),
-                onSaved: (val) => favoriteTeam = val,
-                validator: (val) {
-                  if (val == null || val.isEmpty) {
-                    return "Please select a favorite team";
-                  }
-                  return null;
-                },
-              ),
-              TextFormField(
-                initialValue: password,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
-                onSaved: (val) => password = val?.trim(),
-                validator: (val) {
-                  if (val == null || val.length < 6) {
-                    return "Password must be at least 6 characters";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: updateUserData,
-                child: const Text("Save Changes"),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+        if (_isUpdating)
+          Container(
+            color: Colors.black45,
+            child: const Center(child: CircularProgressIndicator()),
+          ),
+      ],
     );
   }
 }
