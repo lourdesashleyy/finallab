@@ -54,11 +54,15 @@ class _CommentScreenState extends State<CommentScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: const Text("Edit Comment"),
           content: TextField(
             controller: controller,
             maxLines: 3,
-            decoration: const InputDecoration(hintText: "Update your comment"),
+            decoration: InputDecoration(
+              hintText: "Update your comment",
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            ),
           ),
           actions: [
             TextButton(
@@ -66,6 +70,10 @@ class _CommentScreenState extends State<CommentScreen> {
               child: const Text("Cancel"),
             ),
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF0D1B63),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ),
               onPressed: () async {
                 await FirebaseFirestore.instance
                     .collection('tbl_posts')
@@ -86,7 +94,14 @@ class _CommentScreenState extends State<CommentScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Comments")),
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0D1B63),
+        foregroundColor: Colors.white,
+        title: const Text("Comments"),
+        centerTitle: true,
+        elevation: 0,
+      ),
       body: Column(
         children: [
           Expanded(
@@ -99,7 +114,11 @@ class _CommentScreenState extends State<CommentScreen> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-                if (snapshot.data!.docs.isEmpty) return const Center(child: Text("No comments yet."));
+                if (snapshot.data!.docs.isEmpty) {
+                  return const Center(
+                    child: Text("No comments yet.", style: TextStyle(color: Colors.grey)),
+                  );
+                }
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(8),
@@ -123,58 +142,70 @@ class _CommentScreenState extends State<CommentScreen> {
                         final username = user['username'] ?? 'Unknown';
                         final profileUrl = user['profilePicture'] ?? '';
 
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          child: Padding(
-                            padding: const EdgeInsets.all(12.0),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                CircleAvatar(
-                                  backgroundImage: profileUrl.isNotEmpty
-                                      ? NetworkImage(profileUrl)
-                                      : const AssetImage('assets/profile_icon.png') as ImageProvider,
-                                  radius: 24,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Text(
-                                            username,
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                        return Container(
+                          margin: const EdgeInsets.symmetric(vertical: 6),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              CircleAvatar(
+                                backgroundImage: profileUrl.isNotEmpty
+                                    ? NetworkImage(profileUrl)
+                                    : const AssetImage('assets/profile_icon.png') as ImageProvider,
+                                radius: 24,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text(
+                                          username,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
                                           ),
-                                          if (widget.userId == commentUserId)
-                                            PopupMenuButton<String>(
-                                              onSelected: (value) {
-                                                if (value == 'edit') editComment(commentId, comment);
-                                                if (value == 'delete') deleteComment(commentId);
-                                              },
-                                              itemBuilder: (context) => [
-                                                const PopupMenuItem(value: 'edit', child: Text('Edit')),
-                                                const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                                              ],
-                                              padding: EdgeInsets.zero,
-                                            ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(comment),
-                                      const SizedBox(height: 6),
-                                      Text(
-                                        timestamp.toString(),
-                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
-                                      ),
-                                    ],
-                                  ),
+                                        ),
+                                        if (widget.userId == commentUserId)
+                                          PopupMenuButton<String>(
+                                            onSelected: (value) {
+                                              if (value == 'edit') editComment(commentId, comment);
+                                              if (value == 'delete') deleteComment(commentId);
+                                            },
+                                            itemBuilder: (context) => [
+                                              const PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                              const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                            ],
+                                            icon: const Icon(Icons.more_vert, size: 20),
+                                            padding: EdgeInsets.zero,
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(comment, style: const TextStyle(fontSize: 14)),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      timestamp.toString(),
+                                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         );
                       },
@@ -191,8 +222,7 @@ class _CommentScreenState extends State<CommentScreen> {
               color: Colors.white,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
-                  spreadRadius: 1,
+                  color: Colors.grey.withOpacity(0.1),
                   blurRadius: 6,
                   offset: const Offset(0, -2),
                 ),
