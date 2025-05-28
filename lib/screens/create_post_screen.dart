@@ -69,42 +69,88 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Create Post")),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF0D1B63),
+        iconTheme: const IconThemeData(color: Colors.white),
+        title: const Text("Create Post", style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            TextField(
-              controller: _contentController,
-              maxLines: 3,
-              decoration: const InputDecoration(
-                labelText: "Write your post...",
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: pickImage,
-              child: _selectedImage != null
-                  ? Image.file(_selectedImage!, height: 200)
-                  : Container(
-                height: 150,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  border: Border.all(color: Colors.grey),
+        child: Card(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  "What's on your mind?",
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
-                child: const Center(child: Text("Tap to add image")),
-              ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _contentController,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    hintText: "Write something about your favorite team...",
+                    filled: true,
+                    fillColor: Colors.grey[100],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                GestureDetector(
+                  onTap: pickImage,
+                  child: _selectedImage != null
+                      ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(_selectedImage!, height: 200, width: double.infinity, fit: BoxFit.cover),
+                  )
+                      : Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey.shade300),
+                    ),
+                    child: const Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.image_outlined, size: 40, color: Colors.grey),
+                          SizedBox(height: 8),
+                          Text("Tap to add image", style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      backgroundColor: const Color(0xFF0D1B63),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: createPost,
+                    icon: const Icon(Icons.send),
+                    label: const Text("Post", style: TextStyle(fontSize: 16)),
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 12),
-            ElevatedButton(
-              onPressed: createPost,
-              child: const Text("Post"),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
+
 }

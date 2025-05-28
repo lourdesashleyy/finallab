@@ -16,7 +16,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
   String? email, username, favoriteTeam, password, profilePictureUrl;
   bool isLoading = true;
-  bool _isUpdating = false; // Loading indicator for updating
+  bool _isUpdating = false;
   late DocumentReference userDocRef;
   final List<String> teams = [
     'Barangay Ginebra San Miguel', 'San Miguel Beermen', 'TNT Tropang Giga',
@@ -75,7 +75,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (!_formKey.currentState!.validate()) return;
     _formKey.currentState!.save();
 
-    setState(() => _isUpdating = true); // Show loader
+    setState(() => _isUpdating = true);
     String? uploadedUrl = profilePictureUrl;
     if (_selectedImage != null) {
       try {
@@ -88,7 +88,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Image upload failed")),
         );
-        setState(() => _isUpdating = false); // Hide loader
+        setState(() => _isUpdating = false);
         return;
       }
     }
@@ -111,47 +111,88 @@ class _EditProfilePageState extends State<EditProfilePage> {
         const SnackBar(content: Text("Failed to update profile")),
       );
     }
-    setState(() => _isUpdating = false); // Hide loader
+    setState(() => _isUpdating = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    const brandColor = Color(0xFF0D1B63);
+
     if (isLoading) {
       return Scaffold(
-        appBar: AppBar(title: const Text("Edit Profile")),
-        body: const Center(child: CircularProgressIndicator()),
+        appBar: AppBar(
+          title: const Text(
+            "Edit Profile",
+            style: TextStyle(color: Colors.white), // white font color
+          ),
+          backgroundColor: brandColor,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white), // for back button/icon color
+        ),
+        body: const Center(child: CircularProgressIndicator(color: brandColor)),
       );
     }
 
     return Stack(
       children: [
         Scaffold(
-          appBar: AppBar(title: const Text("Edit Profile")),
+          appBar: AppBar(
+            title: const Text("Edit Profile"),
+            backgroundColor: brandColor,
+            elevation: 0,
+          ),
           body: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
             child: Form(
               key: _formKey,
               child: ListView(
+                physics: const BouncingScrollPhysics(),
                 children: [
                   Center(
                     child: GestureDetector(
                       onTap: pickImage,
                       child: CircleAvatar(
-                        radius: 50,
-                        backgroundImage: _selectedImage != null
-                            ? FileImage(_selectedImage!)
-                            : (profilePictureUrl != null && profilePictureUrl!.isNotEmpty)
-                            ? NetworkImage(profilePictureUrl!) as ImageProvider
-                            : const AssetImage("assets/profile_icon.jpg"),
+                        radius: 55,
+                        backgroundColor: brandColor.withOpacity(0.1),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundImage: _selectedImage != null
+                              ? FileImage(_selectedImage!)
+                              : (profilePictureUrl != null && profilePictureUrl!.isNotEmpty)
+                              ? NetworkImage(profilePictureUrl!) as ImageProvider
+                              : const AssetImage("assets/profile_icon.jpg"),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  const Text("Tap the picture to change"),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      "Tap the picture to change",
+                      style: TextStyle(
+                        color: brandColor,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 30),
+
+                  // Email field
                   TextFormField(
                     initialValue: email,
-                    decoration: const InputDecoration(labelText: "Email"),
+                    decoration: InputDecoration(
+                      labelText: "Email",
+                      labelStyle: TextStyle(color: brandColor),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
                     keyboardType: TextInputType.emailAddress,
                     onSaved: (val) => email = val?.trim(),
                     validator: (val) {
@@ -160,18 +201,48 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       return null;
                     },
                   ),
+                  const SizedBox(height: 20),
+
+                  // Username field
                   TextFormField(
                     initialValue: username,
-                    decoration: const InputDecoration(labelText: "Username"),
+                    decoration: InputDecoration(
+                      labelText: "Username",
+                      labelStyle: TextStyle(color: brandColor),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
                     onSaved: (val) => username = val?.trim(),
                     validator: (val) {
                       if (val == null || val.isEmpty) return "Username is required";
                       return null;
                     },
                   ),
+                  const SizedBox(height: 20),
+
+                  // Favorite team dropdown
                   DropdownButtonFormField<String>(
                     value: favoriteTeam!.isNotEmpty ? favoriteTeam : null,
-                    decoration: const InputDecoration(labelText: "Favorite Team"),
+                    decoration: InputDecoration(
+                      labelText: "Favorite Team",
+                      labelStyle: TextStyle(color: brandColor),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
                     items: teams
                         .map((team) => DropdownMenuItem(value: team, child: Text(team)))
                         .toList(),
@@ -183,10 +254,26 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       }
                       return null;
                     },
+                    dropdownColor: Colors.white,
                   ),
+                  const SizedBox(height: 20),
+
+                  // Password field
                   TextFormField(
                     initialValue: password,
-                    decoration: const InputDecoration(labelText: "Password"),
+                    decoration: InputDecoration(
+                      labelText: "Password",
+                      labelStyle: TextStyle(color: brandColor),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor, width: 2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: BorderSide(color: brandColor.withOpacity(0.6)),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
                     obscureText: true,
                     onSaved: (val) => password = val?.trim(),
                     validator: (val) {
@@ -196,10 +283,25 @@ class _EditProfilePageState extends State<EditProfilePage> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 30),
+
                   ElevatedButton(
                     onPressed: updateUserData,
-                    child: const Text("Save Changes"),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: brandColor,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      elevation: 3,
+                    ),
+                    child: const Text(
+                      "Save Changes",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white, // white font color
+                      ),
+                    ),
                   ),
                 ],
               ),
