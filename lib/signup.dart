@@ -49,7 +49,7 @@ class _RegisterFormState extends State<RegisterForm> {
       body: Stack(
         children: [
           Image.asset(
-            'assets/bg1.png', // Ensure this asset is available
+            'assets/bg1.png',
             fit: BoxFit.cover,
             height: double.infinity,
             width: double.infinity,
@@ -80,221 +80,8 @@ class _RegisterFormState extends State<RegisterForm> {
                     key: _formKey,
                     child: Column(
                       children: [
-
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(top: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFF0D1B63),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Account Information",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0D1B63),
-                                ),
-                              ),
-                              const SizedBox(height: 0),
-                              _buildTextField(
-                                "Username",
-                                usernameController,
-                                icon: Icons.person,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) return 'Enter Username';
-                                  if (value.length < 3) return 'Username must be at least 3 characters';
-                                  return null;
-                                },
-                              ),
-                              _buildTextField(
-                                "Email",
-                                emailController,
-                                keyboardType: TextInputType.emailAddress,
-                                icon: Icons.email,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) return 'Enter Email';
-                                  final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                                  if (!emailRegex.hasMatch(value)) return 'Enter a valid email';
-                                  return null;
-                                },
-                              ),
-                              _buildTextField(
-                                "Password",
-                                passwordController,
-                                isPassword: true,
-                                icon: Icons.lock,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) return 'Enter Password';
-                                  if (value.length < 6) return 'Password must be at least 6 characters';
-                                  return null;
-                                },
-                              ),
-                              _buildTextField(
-                                "Confirm Password",
-                                confirmPasswordController,
-                                isPassword: true,
-                                icon: Icons.lock_outline,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) return 'Confirm your password';
-                                  if (value != passwordController.text) return 'Passwords do not match';
-                                  return null;
-                                },
-                              ),
-                              DropdownButtonFormField<String>(
-                                value: selectedTeam,
-                                decoration: InputDecoration(
-                                  labelText: "Favorite Team",
-                                  labelStyle: const TextStyle(
-                                    color: Color(0xFF0D1B63),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                  filled: true,
-                                  fillColor: Colors.white,
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                  border: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2),
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2.5),
-                                  ),
-                                ),
-                                dropdownColor: Colors.white,
-                                icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF0D1B63)),
-                                style: const TextStyle(
-                                  color: Color(0xFF0D1B63),
-                                  fontSize: 16,
-                                ),
-                                items: teams.map((team) {
-                                  return DropdownMenuItem(
-                                    value: team,
-                                    child: Text(team),
-                                  );
-                                }).toList(),
-                                onChanged: (value) {
-                                  setState(() {
-                                    selectedTeam = value;
-                                  });
-                                },
-                                validator: (value) => value == null ? 'Please select a team' : null,
-                              ),
-                            ],
-                          ),
-                        ),
-
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          margin: const EdgeInsets.only(top: 16, bottom: 10),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: const Color(0xFF0D1B63),
-                              width: 1.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.05),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                "Security Information",
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF0D1B63),
-                                ),
-                              ),
-                              const SizedBox(height: 10),
-                              /// This makes sure Dropdown won't overflow
-                              LayoutBuilder(
-                                builder: (context, constraints) {
-                                  return ConstrainedBox(
-                                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
-                                    child: DropdownButtonFormField<String>(
-                                      isExpanded: true, // 👈 ensures dropdown uses full width
-                                      value: selectedSecurityQuestion,
-                                      decoration: InputDecoration(
-                                        labelText: "Security Question",
-                                        labelStyle: const TextStyle(
-                                          color: Color(0xFF0D1B63),
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                        filled: true,
-                                        fillColor: Colors.white,
-                                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                        border: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2),
-                                        ),
-                                        enabledBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2),
-                                        ),
-                                        focusedBorder: OutlineInputBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                          borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2.5),
-                                        ),
-                                      ),
-                                      dropdownColor: Colors.white,
-                                      icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF0D1B63)),
-                                      style: const TextStyle(
-                                        color: Color(0xFF0D1B63),
-                                        fontSize: 16,
-                                      ),
-                                      items: securityQuestions.map((question) {
-                                        return DropdownMenuItem(
-                                          value: question,
-                                          child: Text(
-                                            question,
-                                            overflow: TextOverflow.ellipsis, // 👈 handles long text
-                                            maxLines: 1,
-                                          ),
-                                        );
-                                      }).toList(),
-                                      onChanged: (value) {
-                                        setState(() {
-                                          selectedSecurityQuestion = value;
-                                        });
-                                      },
-                                      validator: (value) =>
-                                      value == null ? 'Please select a security question' : null,
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 10),
-                              _buildTextField("Security Answer", securityAnswerController, icon: Icons.security),
-                            ],
-                          ),
-                        ),
-
+                        _buildAccountSection(),
+                        _buildSecuritySection(),
                         const SizedBox(height: 0),
                         SizedBox(
                           width: double.infinity,
@@ -309,17 +96,20 @@ class _RegisterFormState extends State<RegisterForm> {
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 try {
-                                  await FirebaseFirestore.instance
+                                  final newDocRef = FirebaseFirestore.instance
                                       .collection("tbl_Users")
-                                      .add({
+                                      .doc(); // Generate ID
+                                  await newDocRef.set({
+                                    'user_id': newDocRef.id,
                                     'username': usernameController.text,
                                     'email': emailController.text,
                                     'favoriteTeam': selectedTeam,
                                     'password': passwordController.text,
                                     'securityQuestion': selectedSecurityQuestion,
-                                    'securityAnswer':
-                                    securityAnswerController.text,
+                                    'securityAnswer': securityAnswerController.text,
                                     'profilePicture': null,
+                                    'followers': [],
+                                    'following': [],
                                   });
 
                                   Fluttertoast.showToast(
@@ -330,9 +120,7 @@ class _RegisterFormState extends State<RegisterForm> {
 
                                   Navigator.pushReplacement(
                                     context,
-                                    MaterialPageRoute(
-                                        builder: (context) =>
-                                        const LoginPage()),
+                                    MaterialPageRoute(builder: (context) => const LoginPage()),
                                   );
                                 } catch (e) {
                                   Fluttertoast.showToast(
@@ -362,6 +150,144 @@ class _RegisterFormState extends State<RegisterForm> {
     );
   }
 
+  Widget _buildAccountSection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 5),
+      decoration: _boxDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Account Information",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0D1B63),
+            ),
+          ),
+          const SizedBox(height: 0),
+          _buildTextField("Username", usernameController, icon: Icons.person),
+          _buildTextField("Email", emailController,
+              keyboardType: TextInputType.emailAddress, icon: Icons.email),
+          _buildTextField("Password", passwordController,
+              isPassword: true, icon: Icons.lock),
+          _buildTextField("Confirm Password", confirmPasswordController,
+              isPassword: true, icon: Icons.lock_outline,
+              validator: (value) {
+                if (value == null || value.isEmpty) return 'Confirm your password';
+                if (value != passwordController.text) return 'Passwords do not match';
+                return null;
+              }),
+          DropdownButtonFormField<String>(
+            value: selectedTeam,
+            decoration: _dropdownDecoration("Favorite Team"),
+            dropdownColor: Colors.white,
+            icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF0D1B63)),
+            style: const TextStyle(color: Color(0xFF0D1B63), fontSize: 16),
+            items: teams.map((team) {
+              return DropdownMenuItem(value: team, child: Text(team));
+            }).toList(),
+            onChanged: (value) => setState(() => selectedTeam = value),
+            validator: (value) => value == null ? 'Please select a team' : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSecuritySection() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(top: 16, bottom: 10),
+      decoration: _boxDecoration(),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Security Information",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF0D1B63),
+            ),
+          ),
+          const SizedBox(height: 10),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              return ConstrainedBox(
+                constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                child: DropdownButtonFormField<String>(
+                  isExpanded: true,
+                  value: selectedSecurityQuestion,
+                  decoration: _dropdownDecoration("Security Question"),
+                  dropdownColor: Colors.white,
+                  icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF0D1B63)),
+                  style: const TextStyle(color: Color(0xFF0D1B63), fontSize: 16),
+                  items: securityQuestions.map((question) {
+                    return DropdownMenuItem(
+                      value: question,
+                      child: Text(
+                        question,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                      ),
+                    );
+                  }).toList(),
+                  onChanged: (value) =>
+                      setState(() => selectedSecurityQuestion = value),
+                  validator: (value) =>
+                  value == null ? 'Please select a security question' : null,
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 10),
+          _buildTextField("Security Answer", securityAnswerController, icon: Icons.security),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _dropdownDecoration(String labelText) {
+    return InputDecoration(
+      labelText: labelText,
+      labelStyle: const TextStyle(
+        color: Color(0xFF0D1B63),
+        fontWeight: FontWeight.w600,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF0D1B63), width: 2.5),
+      ),
+    );
+  }
+
+  BoxDecoration _boxDecoration() {
+    return BoxDecoration(
+      color: Colors.white.withOpacity(0.9),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: const Color(0xFF0D1B63), width: 1.5),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 8,
+          offset: const Offset(0, 4),
+        ),
+      ],
+    );
+  }
 
   Widget _buildTextField(
       String label,
@@ -369,7 +295,7 @@ class _RegisterFormState extends State<RegisterForm> {
         bool isPassword = false,
         TextInputType keyboardType = TextInputType.text,
         String? Function(String?)? validator,
-        IconData icon = Icons.person, // <-- Add default icon
+        IconData icon = Icons.person,
       }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0),
@@ -377,8 +303,7 @@ class _RegisterFormState extends State<RegisterForm> {
         controller: controller,
         obscureText: isPassword,
         keyboardType: keyboardType,
-        validator: validator ??
-                (value) => value == null || value.isEmpty ? 'Enter $label' : null,
+        validator: validator ?? (value) => value == null || value.isEmpty ? 'Enter $label' : null,
         decoration: InputDecoration(
           prefixIcon: Icon(icon, color: const Color(0xFF0D1B63)),
           hintText: label,
@@ -393,8 +318,6 @@ class _RegisterFormState extends State<RegisterForm> {
       ),
     );
   }
-
-
 }
 
 class TopWaveClipper extends CustomClipper<Path> {
@@ -402,8 +325,7 @@ class TopWaveClipper extends CustomClipper<Path> {
   Path getClip(Size size) {
     final path = Path();
     path.lineTo(0, size.height - 50);
-    path.quadraticBezierTo(
-        size.width / 2, size.height, size.width, size.height - 50);
+    path.quadraticBezierTo(size.width / 2, size.height, size.width, size.height - 50);
     path.lineTo(size.width, 0);
     path.close();
     return path;

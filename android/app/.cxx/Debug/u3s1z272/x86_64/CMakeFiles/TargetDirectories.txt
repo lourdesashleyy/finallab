@@ -1,0 +1,2 @@
+C:/Users/Goldie May/Desktop/Final/Festivaa/Festivaa/finallab/android/app/.cxx/Debug/u3s1z272/x86_64/CMakeFiles/edit_cache.dir
+C:/Users/Goldie May/Desktop/Final/Festivaa/Festivaa/finallab/android/app/.cxx/Debug/u3s1z272/x86_64/CMakeFiles/rebuild_cache.dir
