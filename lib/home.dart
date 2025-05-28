@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:finallab_santosla/editprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
@@ -21,15 +22,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   late AnimationController _controller;
 
   Future<void> _refreshPosts() async {
-    setState(() {}); // triggers rebuild
+    setState(() {});
   }
 
-  Stream<QuerySnapshot> getPostsStream() {
-    return FirebaseFirestore.instance
-        .collection('tbl_posts')
-        .orderBy('timestamp', descending: true)
-        .snapshots();
+  Future<List<String>> getFollowingUserIds() async {
+    final userDoc = await FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get();
+    final followingUsernames = List<String>.from(userDoc.data()?['following'] ?? []);
+
+    final query = await FirebaseFirestore.instance
+        .collection('tbl_Users')
+        .where('username', whereIn: followingUsernames)
+        .get();
+
+    return query.docs.map((doc) => doc.id).toList(); // return their document IDs
   }
+
 
   Future<String> getUsername(String userId) async {
     try {
@@ -95,8 +102,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  Widget buildPostList(QuerySnapshot snapshot) {
-    final docs = snapshot.docs;
+  Widget buildPostList(List<QueryDocumentSnapshot> docs) {
     return ListView.separated(
       itemCount: docs.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
@@ -154,113 +160,140 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+  Widget followingTab() {
+    return FutureBuilder<List<String>>(
+      future: getFollowingUserIds(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return buildShimmer();
+        final following = snapshot.data!;
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('tbl_posts')
+              .where('user_id', whereIn: following.isEmpty ? ['dummy'] : following)
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) return buildShimmer();
+            return buildPostList(snapshot.data!.docs);
+          },
+        );
+      },
+    );
+  }
+
+  Widget exploreTab() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('tbl_posts')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) return buildShimmer();
+        return buildPostList(snapshot.data!.docs);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            FutureBuilder<DocumentSnapshot>(
-              future: FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get(),
-              builder: (context, snapshot) {
-                String profilePicUrl = '';
-                String usernameDisplay = widget.currentUsername;
-                String emailDisplay = '';
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: [
+              FutureBuilder<DocumentSnapshot>(
+                future: FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get(),
+                builder: (context, snapshot) {
+                  String profilePicUrl = '';
+                  String usernameDisplay = widget.currentUsername;
+                  String emailDisplay = '';
 
-                if (snapshot.hasData && snapshot.data!.exists) {
-                  final data = snapshot.data!.data() as Map<String, dynamic>;
-                  profilePicUrl = data['profilePicture'] ?? '';
-                  usernameDisplay = data['username'] ?? widget.currentUsername;
-                  emailDisplay = data['email'] ?? '';
-                }
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    profilePicUrl = data['profilePicture'] ?? '';
+                    usernameDisplay = data['username'] ?? widget.currentUsername;
+                    emailDisplay = data['email'] ?? '';
+                  }
 
-                return UserAccountsDrawerHeader(
-                  decoration: const BoxDecoration(color: Color(0xFF0D1B63)),
-                  currentAccountPicture: CircleAvatar(
-                    backgroundImage: profilePicUrl.isNotEmpty
-                        ? NetworkImage(profilePicUrl)
-                        : const AssetImage("assets/profile_icon.jpg") as ImageProvider,
-                  ),
-                  accountName: Text(usernameDisplay, style: const TextStyle(fontSize: 18)),
-                  accountEmail: Text(emailDisplay.isNotEmpty ? emailDisplay : "No Email Found", style: const TextStyle(fontSize: 14)),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.home),
-              title: const Text('Home'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.person),
-              title: const Text('Profile'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProfilePage(
-                      userId: widget.userId,
-                      currentUsername: widget.currentUsername,
+                  return UserAccountsDrawerHeader(
+                    decoration: const BoxDecoration(color: Color(0xFF0D1B63)),
+                    currentAccountPicture: CircleAvatar(
+                      backgroundImage: profilePicUrl.isNotEmpty
+                          ? NetworkImage(profilePicUrl)
+                          : const AssetImage("assets/profile_icon.jpg") as ImageProvider,
                     ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.edit),
-              title: const Text('Edit Profile'),
-              onTap: () async {
-                Navigator.pop(context);
-                String username = await getUsername(widget.userId);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => EditProfilePage(username: username),
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        title: const Text("Home", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        backgroundColor: const Color(0xFF0D1B63),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF0D1B63),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => CreatePostScreen(userId: widget.userId)),
-          );
-        },
-        child: const Icon(Icons.add, color: Colors.white),
-      ),
-      body: RefreshIndicator(
-        onRefresh: _refreshPosts,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8),
-          child: StreamBuilder<QuerySnapshot>(
-            stream: getPostsStream(),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return buildShimmer();
-              }
-
-              if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                return const Center(
-                  child: Text("No posts yet.\nPull down to refresh or add a new post."),
-                );
-              }
-
-              return buildPostList(snapshot.data!);
-            },
+                    accountName: Text(usernameDisplay, style: const TextStyle(fontSize: 18)),
+                    accountEmail: Text(emailDisplay.isNotEmpty ? emailDisplay : "No Email Found", style: const TextStyle(fontSize: 14)),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.home),
+                title: const Text('Home'),
+                onTap: () => Navigator.pop(context),
+              ),
+              ListTile(
+                leading: const Icon(Icons.person),
+                title: const Text('Profile'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProfilePage(
+                        userId: widget.userId,
+                        currentUsername: widget.currentUsername,
+                      ),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Profile'),
+                onTap: () async {
+                  Navigator.pop(context);
+                  String username = await getUsername(widget.userId);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditProfilePage(username: username),
+                    ),
+                  );
+                },
+              ),
+            ],
           ),
+        ),
+        appBar: AppBar(
+          title: const Text("Home", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          backgroundColor: const Color(0xFF0D1B63),
+          iconTheme: const IconThemeData(color: Colors.white),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'Following'),
+              Tab(text: 'Explore'),
+            ],
+          ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          backgroundColor: const Color(0xFF0D1B63),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => CreatePostScreen(userId: widget.userId)),
+            );
+          },
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
+        body: TabBarView(
+          children: [
+            followingTab(),
+            exploreTab(),
+          ],
         ),
       ),
     );
