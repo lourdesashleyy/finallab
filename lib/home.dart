@@ -1,5 +1,4 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:finallab_santosla/editprofile.dart';
 import 'package:flutter/material.dart';
 import 'package:shimmer/shimmer.dart';
@@ -7,6 +6,8 @@ import 'package:finallab_santosla/screens/create_post_screen.dart';
 import 'package:finallab_santosla/screens/edit_post_screen.dart';
 import 'package:finallab_santosla/screens/comment_screen.dart';
 import 'package:finallab_santosla/widgets/post_card.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'main.dart';
 import 'profile.dart';
 
 class HomePage extends StatefulWidget {
@@ -29,14 +30,15 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     final userDoc = await FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get();
     final followingUsernames = List<String>.from(userDoc.data()?['following'] ?? []);
 
+    if (followingUsernames.isEmpty) return [];
+
     final query = await FirebaseFirestore.instance
         .collection('tbl_Users')
         .where('username', whereIn: followingUsernames)
         .get();
 
-    return query.docs.map((doc) => doc.id).toList(); // return their document IDs
+    return query.docs.map((doc) => doc.id).toList();
   }
-
 
   Future<String> getUsername(String userId) async {
     try {
@@ -90,27 +92,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Widget buildPostList(List<QueryDocumentSnapshot> docs) {
+  Widget buildPostList(QuerySnapshot snapshot) {
+    final docs = snapshot.docs;
     return ListView.separated(
-      itemCount: docs.length,
+      itemCount: docs.length + 1,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) {
-        final doc = docs[index];
+        if (index == 0) return Column(children: [buildHighlightsSection(), const SizedBox(height: 10)]);
+        final doc = docs[index - 1];
         final data = doc.data() as Map<String, dynamic>;
         final timestamp = (data['timestamp'] as Timestamp).toDate();
-        final formattedDate = "${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
+        final formattedDate =
+            "${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')} ${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}";
         final isLiked = (data['likedUserIds'] as List<dynamic>?)?.contains(widget.userId) ?? false;
 
         return FutureBuilder<String>(
@@ -160,28 +153,124 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
-  Widget followingTab() {
+  Widget buildHighlightsSection() {
+    final Map<String, String> teamNameToUsername = {
+      "Barangay Ginebra San Miguel": "ginebra_kings",
+      "San Miguel Beermen": "smb_beermen",
+      "TNT Tropang Giga": "tnt_tropang",
+      "Meralco Bolts": "meralco_energy",
+      "Magnolia Hotshots": "magnolia_pambansang",
+      "Rain or Shine Elasto Painters": "rainshine_elasto",
+      "Phoenix Super LPG Fuel Masters": "phoenix_lpg_masters",
+      "NLEX Road Warriors": "nlex_roadmen",
+      "NorthPort Batang Pier": "northport_batang",
+      "Terrafirma Dyip": "dyip_terrafirma",
+      "Blackwater Bossing": "bossing_blackwater",
+      "Converge FiberXers": "fiberx_converge",
+    };
+
+    final List<Map<String, String>> teams = teamNameToUsername.entries.map((entry) {
+      return {
+        'name': entry.key,
+        'logo': 'assets/${entry.key.toLowerCase().replaceAll(" ", "").replaceAll("–", "").replaceAll("-", "")}.jpg',
+      };
+    }).toList();
+
+    return Container(
+      margin: const EdgeInsets.only(top: 20),
+      height: 150,
+      child: ListView.builder(
+        scrollDirection: Axis.horizontal,
+        itemCount: teams.length,
+        itemBuilder: (context, index) {
+          final teamName = teams[index]['name']!;
+          final username = teamNameToUsername[teamName]!;
+          return GestureDetector(
+            onTap: () async {
+              try {
+                final querySnapshot = await FirebaseFirestore.instance
+                    .collection('tbl_Users')
+                    .where('username', isEqualTo: username)
+                    .limit(1)
+                    .get();
+
+                if (querySnapshot.docs.isNotEmpty) {
+                  final userId = querySnapshot.docs.first.id;
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ProfilePage(userId: userId, currentUsername: ''),
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("User not found for $teamName")),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Error fetching user data: $e")),
+                );
+              }
+            },
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              width: 100,
+              child: Column(
+                children: [
+                  Container(
+                    height: 100,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(15),
+                      image: DecorationImage(
+                        image: AssetImage(teams[index]['logo']!),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    teamName,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget buildFollowingTab() {
     return FutureBuilder<List<String>>(
       future: getFollowingUserIds(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return buildShimmer();
-        final following = snapshot.data!;
+        final followingIds = snapshot.data!;
+        if (followingIds.isEmpty) {
+          return const Center(child: Text("You're not following anyone yet."));
+        }
         return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('tbl_posts')
-              .where('user_id', whereIn: following.isEmpty ? ['dummy'] : following)
+              .where('user_id', whereIn: followingIds)
               .orderBy('timestamp', descending: true)
               .snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return buildShimmer();
-            return buildPostList(snapshot.data!.docs);
+            return buildPostList(snapshot.data!);
           },
         );
       },
     );
   }
 
-  Widget exploreTab() {
+  Widget buildExploreTab() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('tbl_posts')
@@ -189,9 +278,21 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return buildShimmer();
-        return buildPostList(snapshot.data!.docs);
+        return buildPostList(snapshot.data!);
       },
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(duration: const Duration(milliseconds: 500), vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
   }
 
   @override
@@ -201,67 +302,84 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       child: Scaffold(
         backgroundColor: Colors.grey[100],
         drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
+          child: Column(
             children: [
-              FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get(),
-                builder: (context, snapshot) {
-                  String profilePicUrl = '';
-                  String usernameDisplay = widget.currentUsername;
-                  String emailDisplay = '';
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.zero,
+                  children: [
+                    FutureBuilder<DocumentSnapshot>(
+                      future: FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get(),
+                      builder: (context, snapshot) {
+                        String profilePicUrl = '';
+                        String usernameDisplay = widget.currentUsername;
+                        String emailDisplay = '';
 
-                  if (snapshot.hasData && snapshot.data!.exists) {
-                    final data = snapshot.data!.data() as Map<String, dynamic>;
-                    profilePicUrl = data['profilePicture'] ?? '';
-                    usernameDisplay = data['username'] ?? widget.currentUsername;
-                    emailDisplay = data['email'] ?? '';
-                  }
+                        if (snapshot.hasData && snapshot.data!.exists) {
+                          final data = snapshot.data!.data() as Map<String, dynamic>;
+                          profilePicUrl = data['profilePicture'] ?? '';
+                          usernameDisplay = data['username'] ?? widget.currentUsername;
+                          emailDisplay = data['email'] ?? '';
+                        }
 
-                  return UserAccountsDrawerHeader(
-                    decoration: const BoxDecoration(color: Color(0xFF0D1B63)),
-                    currentAccountPicture: CircleAvatar(
-                      backgroundImage: profilePicUrl.isNotEmpty
-                          ? NetworkImage(profilePicUrl)
-                          : const AssetImage("assets/profile_icon.jpg") as ImageProvider,
+                        return UserAccountsDrawerHeader(
+                          decoration: const BoxDecoration(color: Color(0xFF0D1B63)),
+                          currentAccountPicture: CircleAvatar(
+                            backgroundImage: profilePicUrl.isNotEmpty
+                                ? NetworkImage(profilePicUrl)
+                                : const AssetImage("assets/profile_icon.jpg") as ImageProvider,
+                          ),
+                          accountName: Text(usernameDisplay, style: const TextStyle(fontSize: 18)),
+                          accountEmail: Text(emailDisplay.isNotEmpty ? emailDisplay : "No Email Found", style: const TextStyle(fontSize: 14)),
+                        );
+                      },
                     ),
-                    accountName: Text(usernameDisplay, style: const TextStyle(fontSize: 18)),
-                    accountEmail: Text(emailDisplay.isNotEmpty ? emailDisplay : "No Email Found", style: const TextStyle(fontSize: 14)),
-                  );
-                },
+                    ListTile(
+                      leading: const Icon(Icons.home),
+                      title: const Text('Home'),
+                      onTap: () => Navigator.pop(context),
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.person),
+                      title: const Text('Profile'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => ProfilePage(
+                              userId: widget.userId,
+                              currentUsername: widget.currentUsername,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.edit),
+                      title: const Text('Edit Profile'),
+                      onTap: () async {
+                        Navigator.pop(context);
+                        String username = await getUsername(widget.userId);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EditProfilePage(username: username),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
+              const Divider(),
               ListTile(
-                leading: const Icon(Icons.home),
-                title: const Text('Home'),
-                onTap: () => Navigator.pop(context),
-              ),
-              ListTile(
-                leading: const Icon(Icons.person),
-                title: const Text('Profile'),
+                leading: const Icon(Icons.logout, color: Colors.red),
+                title: const Text('Logout', style: TextStyle(color: Colors.red)),
                 onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
+                  Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(
-                      builder: (_) => ProfilePage(
-                        userId: widget.userId,
-                        currentUsername: widget.currentUsername,
-                      ),
-                    ),
-                  );
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.edit),
-                title: const Text('Edit Profile'),
-                onTap: () async {
-                  Navigator.pop(context);
-                  String username = await getUsername(widget.userId);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => EditProfilePage(username: username),
-                    ),
+                    MaterialPageRoute(builder: (_) => const GetStartedPage()),
                   );
                 },
               ),
@@ -291,8 +409,8 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         ),
         body: TabBarView(
           children: [
-            followingTab(),
-            exploreTab(),
+            buildFollowingTab(),
+            buildExploreTab(),
           ],
         ),
       ),
