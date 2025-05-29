@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
+import '../profile.dart'; // Make sure this import is correct relative to your project structure
 
 class CommentScreen extends StatefulWidget {
   final String postId;
@@ -131,11 +132,24 @@ class _CommentScreenState extends State<CommentScreen> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                CircleAvatar(
-                                  backgroundImage: profileUrl.isNotEmpty
-                                      ? NetworkImage(profileUrl)
-                                      : const AssetImage('assets/profile_icon.png') as ImageProvider,
-                                  radius: 24,
+                                GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => ProfilePage(
+                                          userId: commentUserId,
+                                          currentUsername: widget.userId,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: CircleAvatar(
+                                    backgroundImage: profileUrl.isNotEmpty
+                                        ? NetworkImage(profileUrl)
+                                        : const AssetImage('assets/profile_icon.png') as ImageProvider,
+                                    radius: 24,
+                                  ),
                                 ),
                                 const SizedBox(width: 12),
                                 Expanded(
@@ -145,9 +159,25 @@ class _CommentScreenState extends State<CommentScreen> {
                                       Row(
                                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                         children: [
-                                          Text(
-                                            username,
-                                            style: const TextStyle(fontWeight: FontWeight.bold),
+                                          GestureDetector(
+                                            onTap: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (_) => ProfilePage(
+                                                    userId: commentUserId,
+                                                    currentUsername: widget.userId,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            child: Text(
+                                              username,
+                                              style: const TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.blue,
+                                              ),
+                                            ),
                                           ),
                                           if (widget.userId == commentUserId)
                                             PopupMenuButton<String>(

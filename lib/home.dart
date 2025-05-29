@@ -26,6 +26,11 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     setState(() {});
   }
 
+  final TextEditingController _searchController = TextEditingController();
+  List<DocumentSnapshot> searchResults = [];
+  String searchQuery = '';
+
+
   Future<List<String>> getFollowingUserIds() async {
     final userDoc = await FirebaseFirestore.instance.collection('tbl_Users').doc(widget.userId).get();
     final followingUsernames = List<String>.from(userDoc.data()?['following'] ?? []);
@@ -39,6 +44,20 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
     return query.docs.map((doc) => doc.id).toList();
   }
+
+  Future<void> performSearch(String query) async {
+    final result = await FirebaseFirestore.instance
+        .collection('tbl_Users')
+        .where('username', isGreaterThanOrEqualTo: query)
+        .where('username', isLessThanOrEqualTo: query + '\uf8ff')
+        .get();
+
+    setState(() {
+      searchResults = result.docs;
+      searchQuery = query;
+    });
+  }
+
 
   Future<String> getUsername(String userId) async {
     try {
@@ -465,9 +484,37 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           ),
         ),
         appBar: AppBar(
-          title: const Text("Home", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           backgroundColor: const Color(0xFF0D1B63),
           iconTheme: const IconThemeData(color: Colors.white),
+          title: TextField(
+            controller: _searchController,
+            style: const TextStyle(color: Colors.white),
+            decoration: InputDecoration(
+              hintText: 'Search users or teams...',
+              hintStyle: const TextStyle(color: Colors.white70),
+              border: InputBorder.none,
+              suffixIcon: IconButton(
+                icon: const Icon(Icons.clear, color: Colors.white),
+                onPressed: () {
+                  _searchController.clear();
+                  setState(() {
+                    searchResults = [];
+                    searchQuery = '';
+                  });
+                },
+              ),
+            ),
+            onChanged: (value) {
+              if (value.trim().isEmpty) {
+                setState(() {
+                  searchResults = [];
+                  searchQuery = '';
+                });
+              } else {
+                performSearch(value.trim());
+              }
+            },
+          ),
           bottom: const TabBar(
             tabs: [
               Tab(text: 'Following'),
@@ -475,6 +522,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
             ],
           ),
         ),
+
         floatingActionButton: FloatingActionButton(
           backgroundColor: const Color(0xFF0D1B63),
           onPressed: () {
@@ -485,7 +533,9 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           },
           child: const Icon(Icons.add, color: Colors.white),
         ),
-        body: TabBarView(
+        body: searchQuery.isNotEmpty
+            ? buildSearchResults()
+            : TabBarView(
           children: [
             buildFollowingTab(),
             buildExploreTab(),
@@ -494,4 +544,35 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
       ),
     );
   }
+
+  Widget buildSearchResults() {
+    return ListView.builder(
+      itemCount: searchResults.length,
+      itemBuilder: (context, index) {
+        final user = searchResults[index].data() as Map<String, dynamic>;
+        final userId = searchResults[index].id;
+
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundImage: user['profilePicture'] != null && user['profilePicture'] != ''
+                ? NetworkImage(user['profilePicture'])
+                : const AssetImage("assets/profile_icon.jpg") as ImageProvider,
+          ),
+          title: Text(user['username']),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ProfilePage(
+                  userId: userId,
+                  currentUsername: widget.currentUsername,
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
 }
