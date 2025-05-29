@@ -154,27 +154,68 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
   }
 
   Widget buildHighlightsSection() {
-    final Map<String, String> teamNameToUsername = {
-      "Barangay Ginebra San Miguel": "ginebra_kings",
-      "San Miguel Beermen": "smb_beermen",
-      "TNT Tropang Giga": "tnt_tropang",
-      "Meralco Bolts": "meralco_energy",
-      "Magnolia Hotshots": "magnolia_pambansang",
-      "Rain or Shine Elasto Painters": "rainshine_elasto",
-      "Phoenix Super LPG Fuel Masters": "phoenix_lpg_masters",
-      "NLEX Road Warriors": "nlex_roadmen",
-      "NorthPort Batang Pier": "northport_batang",
-      "Terrafirma Dyip": "dyip_terrafirma",
-      "Blackwater Bossing": "bossing_blackwater",
-      "Converge FiberXers": "fiberx_converge",
-    };
-
-    final List<Map<String, String>> teams = teamNameToUsername.entries.map((entry) {
-      return {
-        'name': entry.key,
-        'logo': 'assets/${entry.key.toLowerCase().replaceAll(" ", "").replaceAll("–", "").replaceAll("-", "")}.jpg',
-      };
-    }).toList();
+    final List<Map<String, String>> teams = [
+      {
+        'name': 'Barangay Ginebra San Miguel',
+        'username': 'ginebra_kings',
+        'logo': 'assets/ginebra.jpg',
+      },
+      {
+        'name': 'San Miguel Beermen',
+        'username': 'smb_beermen',
+        'logo': 'assets/smbm.jpg',
+      },
+      {
+        'name': 'TNT Tropang Giga',
+        'username': 'tnt_tropang',
+        'logo': 'assets/tnt.jpg',
+      },
+      {
+        'name': 'Meralco Bolts',
+        'username': 'meralco_energy',
+        'logo': 'assets/boltz.jpg',
+      },
+      {
+        'name': 'Magnolia Hotshots',
+        'username': 'magnolia_pambansang',
+        'logo': 'assets/hotshots.jpg',
+      },
+      {
+        'name': 'Rain or Shine Elasto Painters',
+        'username': 'rainshine_elasto',
+        'logo': 'assets/rs.jpg',
+      },
+      {
+        'name': 'Phoenix Super LPG Fuel Masters',
+        'username': 'phoenix_lpg_masters',
+        'logo': 'assets/phoenix.jpg',
+      },
+      {
+        'name': 'NLEX Road Warriors',
+        'username': 'nlex_roadmen',
+        'logo': 'assets/nlex.jpg',
+      },
+      {
+        'name': 'NorthPort Batang Pier',
+        'username': 'northport_batang',
+        'logo': 'assets/np.jpg',
+      },
+      {
+        'name': 'Terrafirma Dyip',
+        'username': 'dyip_terrafirma',
+        'logo': 'assets/dyip.jpg',
+      },
+      {
+        'name': 'Blackwater Bossing',
+        'username': 'bossing_blackwater',
+        'logo': 'assets/blackwater.jpg',
+      },
+      {
+        'name': 'Converge FiberXers',
+        'username': 'fiberx_converge',
+        'logo': 'assets/converge.jpg',
+      },
+    ];
 
     return Container(
       margin: const EdgeInsets.only(top: 20),
@@ -183,14 +224,13 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         scrollDirection: Axis.horizontal,
         itemCount: teams.length,
         itemBuilder: (context, index) {
-          final teamName = teams[index]['name']!;
-          final username = teamNameToUsername[teamName]!;
+          final team = teams[index];
           return GestureDetector(
             onTap: () async {
               try {
                 final querySnapshot = await FirebaseFirestore.instance
                     .collection('tbl_Users')
-                    .where('username', isEqualTo: username)
+                    .where('username', isEqualTo: team['username'])
                     .limit(1)
                     .get();
 
@@ -204,7 +244,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                   );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("User not found for $teamName")),
+                    SnackBar(content: Text("User not found for ${team['name']}")),
                   );
                 }
               } catch (e) {
@@ -224,14 +264,14 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(15),
                       image: DecorationImage(
-                        image: AssetImage(teams[index]['logo']!),
+                        image: AssetImage(team['logo']!),
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    teamName,
+                    team['name']!,
                     style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                     textAlign: TextAlign.center,
                     maxLines: 2,
@@ -246,6 +286,7 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
     );
   }
 
+
   Widget buildFollowingTab() {
     return FutureBuilder<List<String>>(
       future: getFollowingUserIds(),
@@ -253,8 +294,32 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         if (!snapshot.hasData) return buildShimmer();
         final followingIds = snapshot.data!;
         if (followingIds.isEmpty) {
-          return const Center(child: Text("You're not following anyone yet."));
+          return RefreshIndicator(
+            onRefresh: _refreshPosts,
+            child: ListView(
+              children: [
+                buildHighlightsSection(),
+                const SizedBox(height: 40),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24.0),
+                  child: Center(
+                    child: Text(
+                      "Follow your favorite PBA Teams and other users\nto get started!",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF333333),
+                        height: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
         }
+
         return StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
               .collection('tbl_posts')
@@ -263,12 +328,16 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
               .snapshots(),
           builder: (context, snapshot) {
             if (!snapshot.hasData) return buildShimmer();
-            return buildPostList(snapshot.data!);
+            return RefreshIndicator(
+              onRefresh: _refreshPosts,
+              child: buildPostList(snapshot.data!),
+            );
           },
         );
       },
     );
   }
+
 
   Widget buildExploreTab() {
     return StreamBuilder<QuerySnapshot>(
@@ -278,7 +347,10 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
           .snapshots(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) return buildShimmer();
-        return buildPostList(snapshot.data!);
+        return RefreshIndicator(
+          onRefresh: _refreshPosts,
+          child: buildPostList(snapshot.data!),
+        );
       },
     );
   }
