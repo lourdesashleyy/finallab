@@ -236,12 +236,18 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
 
                 if (querySnapshot.docs.isNotEmpty) {
                   final userId = querySnapshot.docs.first.id;
+                  final currentUsername = await getUsername(widget.userId); // fetch the actual username
+
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (_) => ProfilePage(userId: userId, currentUsername: ''),
+                      builder: (_) => ProfilePage(
+                        userId: userId,
+                        currentUsername: currentUsername,
+                      ),
                     ),
                   );
+
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text("User not found for ${team['name']}")),
